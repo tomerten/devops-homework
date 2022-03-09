@@ -27,7 +27,7 @@ Please provide a Dockerfile and supporting files to build a docker image.
 The image should contain a webserver to serve static files that will be
 hosted in /opt/html.
 
-The container should run without superuser rights.
+Internally, the container should run as a non-root user.
 
 Curl should also be installed in the container for testing purposes.
 
