@@ -1,0 +1,32 @@
+name: Black Duck - PR Analysis
+on:
+  push:
+    branches: ['master']
+  pull_request:
+    branches: ['master']
+  workflow_dispatch:
+    inputs:
+      scan_mode:
+        description: 'Black Duck scan mode RAPID | INTELLIGENT'
+        required: true
+        default: 'INTELLIGENT'
+jobs:
+  black-duck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Java 11
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+      - name: Run Synopsys Detect
+        uses: synopsys-sig/detect-action@v0.3.0
+        with:
+          scan-mode: ${{ github.event.inputs.scan_mode == 'INTELLIGENT' && github.event.inputs.scan_mode || 'RAPID' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          detect-version: 7.14.0
+          detect-trust-cert: false
+          blackduck-url: ${{ secrets.BLACKDUCK_URL }}
+          blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
