@@ -1,4 +1,8 @@
 #!/bin/bash
+# Author: Tom Mertens
+# Email: tommertensjobapplication@gmail.com
+# Date: 24/09/2022
+
 
 # simple log file to show what the script is doing
 logfile=clean.log
@@ -63,6 +67,7 @@ do
 	   # uncomment for debug
        # wc -l $log
        echo "Processing max lines for ${log}" >> "${logfile}"
+       # use additional temp file to avoid possible race condition on read-write
 	   tail -n "${linesToKeep}" $log > tmp.log
 	   mv tmp.log $log
 	   # uncomment for debug
