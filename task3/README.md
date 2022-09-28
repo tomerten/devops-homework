@@ -104,8 +104,10 @@ C4Context
         Component(rmqserverext, "RMQ Compent", "","RMQ server, Load data into data queues")
         Component(rmqshovel, "Shovel Component", "Shovel", "Shovels the queue from the IoT RMQ server to the AWS RMQ server/cluster.")
 
-        Rel(rmqserverext, iotdev, "Read")
-        Rel(rmqshovel, rmqserverext, "Uses")
+        Rel(rmqserverext, iotdev, "Receive queue", "JSON")
+        Rel(rmqshovel, rmqserverext, "Shovels to AWS RMQ")
+        UpdateRelStyle(rmqserverext, iotdev, $textColor="red", $lineColor="red", $offsetX="-35",$offsetY="-30")
+        UpdateRelStyle(rmqshovel, rmqserverext, $textColor="blue", $lineColor="blue", $offsetX="-35",$offsetY="-30")
 
     }
 
@@ -117,26 +119,53 @@ C4Context
 
 
         Rel(awsrmqbalancer, rmqshovel, "Read and distribute", "JSON")
-        Rel(awsshovelbalancer, awsrmqbalancer, "Uses")
-        Rel(awsfanout,awsshovelbalancer, "Read and split")
+        Rel(awsshovelbalancer, awsrmqbalancer, "Shovel balanced to fanout RMQ")
+        Rel(awsfanout,awsshovelbalancer, "Read and fanout")
         Rel(awselk,awsfanout, "Consumes and stores data")
+
+        UpdateRelStyle(awsrmqbalancer, rmqshovel, $textColor="red", $lineColor="red", $offsetX="-35",$offsetY="-30")
+        UpdateRelStyle(awsshovelbalancer, awsrmqbalancer, $textColor="blue", $lineColor="blue", $offsetX="-45",$offsetY="-35")
+        UpdateRelStyle(awsfanout, awsshovelbalancer, $textColor="blue", $lineColor="blue", $offsetX="-35",$offsetY="-35")
+        UpdateRelStyle(awsfanout, awsshovelbalancer, $textColor="blue", $lineColor="blue", $offsetX="-35",$offsetY="-35")
 
     }
 
     Container_Boundary(local, "Local secondary storage") {
         ContainerDb(localstorage, "Storage Component", "Elasticsearch")
 
-        Rel(localstorage, awsfanout, "Read and store")
+        Rel(localstorage, awsfanout, "Consume and stores data")
     }
 
+    Container_Boundary(localcustomer, "Local Customer"){
+        Component(loadbalancer, "Server Component", "", "Load Balancer")
+        Person(datascientist,"Datascientists")
 
-    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="2", $ContainerInRow="1")
+        Rel(datascientist, loadbalancer, "Uses")
+        Rel(loadbalancer, localstorage, "Query")
+
+        UpdateRelStyle(datascientist, loadbalancer, $textColor="green", $lineColor="green", $offsetX="-35",$offsetY="-35")
+        UpdateRelStyle(loadbalancer, localstorage, $textColor="#f9b", $lineColor="#f9b", $offsetX="25",$offsetY="-35")
+    }
+
+    Container_Boundary(externalcustomer, "External Customer"){
+        Component(loadbalancerext, "Server Component", "", "Load Balancer")
+        Person(customer,"Customer")
+
+        Rel(customer, loadbalancerext, "Uses")
+        Rel(loadbalancerext, awselk, "Query")
+
+        UpdateRelStyle(customer, loadbalancerext, $textColor="green", $lineColor="green", $offsetX="-35",$offsetY="-35")
+        UpdateRelStyle(loadbalancerext, awselk, $textColor="#adf", $lineColor="#adf", $offsetX="-45",$offsetY="-35")
+
+        UpdateElementStyle(customer, $fontColor="green", $bgColor="lightgreen", $borderColor="blue")
+    }
+    UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="1")
 ```
 
 # Details on AWS configuration
 
 ```mermaid
-flowchart TD
+flowchart LR
 subgraph LoadBalancer
 DATA(Data <br> from <br> IoT shovel)-->RMQ1(AWS RMQ <br> Load balancer)
 RMQ1-->Queue01(Queue 1)
@@ -149,7 +178,7 @@ Queue02 --> RMQ3(AWS RMQ <br> Fanout)
 Queue03 --> RMQ4(AWS RMQ <br> Fanout)
 
 subgraph Fanout
-direction RL
+direction TB
 RMQ2-->Queue11(ELK queue)
 RMQ2-->Queue12(Storage queue)
 RMQ3-->Queue21(ELK queue)
